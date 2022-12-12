@@ -4,6 +4,8 @@ pub enum Opcode {
     IGL, // illegal
     LOAD,
     ADD,
+    SUB,
+    MUL,
 }
 
 #[derive(Debug, PartialEq)]
@@ -22,6 +24,8 @@ impl From<u8> for Opcode {
         match v {
             0 => Opcode::LOAD,
             1 => Opcode::ADD,
+            2 => Opcode::SUB,
+            3 => Opcode::MUL,
             5 => Opcode::HLT,
             _ => Opcode::IGL,
         }

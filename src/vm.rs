@@ -34,20 +34,40 @@ impl VM {
             return true;
         }
         match self.decode_opcode() {
-            Opcode::HLT => true,
+            // format: LOAD [number] [1]
+            // Load [number] to register [1]
             Opcode::LOAD => {
                 let register = usize::from(self.next_8_bits());
                 let number = u16::from(self.next_16_bits());
                 self.registers[register] = i32::from(number);
                 false
             }
+            // format: ADD [0] [1] [2]
+            // Add [0] and [1], and then store the result to register [2].
             Opcode::ADD => {
                 let register1 = self.registers[usize::from(self.next_8_bits())];
                 let register2 = self.registers[usize::from(self.next_8_bits())];
                 self.registers[usize::from(self.next_8_bits())] = register1 + register2;
                 false
             }
+            // format: SUB [0] [1] [2]
+            // Subtract [1] from [0], and then store the result to register [2].
+            Opcode::SUB => {
+                let register1 = self.registers[usize::from(self.next_8_bits())];
+                let register2 = self.registers[usize::from(self.next_8_bits())];
+                self.registers[usize::from(self.next_8_bits())] = register1 - register2;
+                false
+            }
+            // format: MUL [0] [1] [2]
+            // Multiply [0] by [1], and then store the result to register [2].
+            Opcode::MUL => {
+                let register1 = self.registers[usize::from(self.next_8_bits())];
+                let register2 = self.registers[usize::from(self.next_8_bits())];
+                self.registers[usize::from(self.next_8_bits())] = register1 * register2;
+                false
+            }
             Opcode::IGL => true,
+            Opcode::HLT => true,
         }
     }
 
@@ -117,7 +137,26 @@ mod tests {
         // result to register 0.
         test_vm.program = vec![0, 1, 1, 244, 0, 2, 1, 244, 1, 1, 2, 0];
         test_vm.run();
-        println!("{:?}", test_vm.registers);
         assert_eq!(test_vm.registers[0], 1000)
+    }
+
+    #[test]
+    fn test_opcode_sub() {
+        let mut test_vm = VM::new();
+        // Load 500 to register 1, load 500 to register 1, subtract register 2 from register 1 and
+        // store the result to register 0.
+        test_vm.program = vec![0, 1, 1, 244, 0, 2, 1, 244, 2, 1, 2, 0];
+        test_vm.run();
+        assert_eq!(test_vm.registers[0], 0)
+    }
+
+    #[test]
+    fn test_opcode_mul() {
+        let mut test_vm = VM::new();
+        // Load 500 to register 1, load 500 to register 2, multiply register 1 by register 2 and store
+        // the result to register 0.
+        test_vm.program = vec![0, 1, 1, 244, 0, 2, 1, 244, 3, 1, 2, 0];
+        test_vm.run();
+        assert_eq!(test_vm.registers[0], 250000)
     }
 }

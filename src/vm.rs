@@ -1,9 +1,10 @@
 use crate::instruction::Opcode;
 
 pub struct VM {
-    pub registers: [i32; 32],
+    registers: [i32; 32],
     pc: usize,
-    pub program: Vec<u8>,
+    program: Vec<u8>,
+    remainder: u32,
 }
 
 impl VM {
@@ -12,6 +13,7 @@ impl VM {
             registers: [0; 32],
             pc: 0,
             program: vec![],
+            remainder: 0,
         };
     }
 
@@ -64,6 +66,16 @@ impl VM {
                 let register1 = self.registers[usize::from(self.next_8_bits())];
                 let register2 = self.registers[usize::from(self.next_8_bits())];
                 self.registers[usize::from(self.next_8_bits())] = register1 * register2;
+                false
+            }
+            // format: DIV [0] [1] [2]
+            // Divide [0] by [1], and then store the result to register [2], and the remainder is
+            // stored in `remainder`.
+            Opcode::DIV => {
+                let register1 = self.registers[usize::from(self.next_8_bits())];
+                let register2 = self.registers[usize::from(self.next_8_bits())];
+                self.registers[usize::from(self.next_8_bits())] = register1 / register2;
+                self.remainder = (register1 % register2) as u32;
                 false
             }
             Opcode::IGL => true,
@@ -124,10 +136,11 @@ mod tests {
     #[test]
     fn test_opcode_load() {
         let mut test_vm = VM::new();
-        // Load 500 to register 0.
-        test_vm.program = vec![0, 0, 1, 244];
+        // Load 500 to register 0 and load 250 to register 1.
+        test_vm.program = vec![0, 0, 1, 244, 0, 1, 0, 250];
         test_vm.run();
         assert_eq!(test_vm.registers[0], 500);
+        assert_eq!(test_vm.registers[1], 250);
     }
 
     #[test]
@@ -137,7 +150,7 @@ mod tests {
         // result to register 0.
         test_vm.program = vec![0, 1, 1, 244, 0, 2, 1, 244, 1, 1, 2, 0];
         test_vm.run();
-        assert_eq!(test_vm.registers[0], 1000)
+        assert_eq!(test_vm.registers[0], 1000);
     }
 
     #[test]
@@ -147,7 +160,7 @@ mod tests {
         // store the result to register 0.
         test_vm.program = vec![0, 1, 1, 244, 0, 2, 1, 244, 2, 1, 2, 0];
         test_vm.run();
-        assert_eq!(test_vm.registers[0], 0)
+        assert_eq!(test_vm.registers[0], 0);
     }
 
     #[test]
@@ -157,6 +170,17 @@ mod tests {
         // the result to register 0.
         test_vm.program = vec![0, 1, 1, 244, 0, 2, 1, 244, 3, 1, 2, 0];
         test_vm.run();
-        assert_eq!(test_vm.registers[0], 250000)
+        assert_eq!(test_vm.registers[0], 250000);
+    }
+
+    #[test]
+    fn test_opcode_div() {
+        let mut test_vm = VM::new();
+        // Load 500 to register 1, load 250 to register 2, multiply register 1 by register 2 and store
+        // the result to register 0.
+        test_vm.program = vec![0, 1, 0, 100, 0, 2, 0, 3, 4, 1, 2, 0];
+        test_vm.run();
+        assert_eq!(test_vm.registers[0], 33);
+        assert_eq!(test_vm.remainder, 1);
     }
 }

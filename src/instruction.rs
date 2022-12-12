@@ -2,6 +2,7 @@
 pub enum Opcode {
     HLT, // halt
     IGL, // illegal
+    LOAD,
 }
 
 #[derive(Debug, PartialEq)]
@@ -18,7 +19,8 @@ impl Instruction {
 impl From<u8> for Opcode {
     fn from(v: u8) -> Self {
         match v {
-            0 => return Opcode::HLT,
+            0 => return Opcode::LOAD,
+            5 => return Opcode::HLT,
             _ => return Opcode::IGL,
         }
     }

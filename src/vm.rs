@@ -15,24 +15,33 @@ impl VM {
         };
     }
 
+    // Loops through the instructions as long as instructions can be executed.
     pub fn run(&mut self) {
-        while self.pc < self.program.len() {
-            match self.decode_opcode() {
-                Opcode::HLT => {
-                    println!("HLT encountered!!");
-                    return;
-                }
-                Opcode::LOAD => {
-                    let register = usize::from(self.next_8_bits());
-                    let number = u16::from(self.next_16_bits());
-                    self.registers[register] = i32::from(number);
-                    continue;
-                }
-                _ => {
-                    println!("Unrecognized opcode!");
-                    return;
-                }
+        let mut done = false;
+        while !done {
+            done = self.execute_instruction();
+        }
+    }
+
+    // Executes only one single instruction.
+    pub fn run_once(&mut self) {
+        self.execute_instruction();
+    }
+
+    // Executes single instruction and returns true if no instructions can be executed.
+    fn execute_instruction(&mut self) -> bool {
+        if self.pc >= self.program.len() {
+            return true;
+        }
+        match self.decode_opcode() {
+            Opcode::HLT => true,
+            Opcode::LOAD => {
+                let register = usize::from(self.next_8_bits());
+                let number = u16::from(self.next_16_bits());
+                self.registers[register] = i32::from(number);
+                false
             }
+            _ => true,
         }
     }
 
@@ -42,17 +51,17 @@ impl VM {
         return opcode;
     }
 
+    // Returns the next 8 bits.
     fn next_8_bits(&mut self) -> u8 {
         let result = self.program[self.pc];
         self.pc += 1;
-        println!("{:?}", result);
         return result;
     }
 
+    // Returns the next 16 bits.
     fn next_16_bits(&mut self) -> u16 {
         let result = (u16::from(self.program[self.pc]) << 8) | u16::from(self.program[self.pc + 1]);
         self.pc += 2;
-        println!("{:?}", result);
         return result;
     }
 }

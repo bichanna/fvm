@@ -41,7 +41,13 @@ impl VM {
                 self.registers[register] = i32::from(number);
                 false
             }
-            _ => true,
+            Opcode::ADD => {
+                let register1 = self.registers[usize::from(self.next_8_bits())];
+                let register2 = self.registers[usize::from(self.next_8_bits())];
+                self.registers[usize::from(self.next_8_bits())] = register1 + register2;
+                false
+            }
+            Opcode::IGL => true,
         }
     }
 
@@ -98,8 +104,20 @@ mod tests {
     #[test]
     fn test_opcode_load() {
         let mut test_vm = VM::new();
+        // Load 500 to register 0.
         test_vm.program = vec![0, 0, 1, 244];
         test_vm.run();
         assert_eq!(test_vm.registers[0], 500);
+    }
+
+    #[test]
+    fn test_opcode_add() {
+        let mut test_vm = VM::new();
+        // Load 500 to register 1, load 500 to register 1, add register 1 and 2, and store the
+        // result to register 0.
+        test_vm.program = vec![0, 1, 1, 244, 0, 2, 1, 244, 1, 1, 2, 0];
+        test_vm.run();
+        println!("{:?}", test_vm.registers);
+        assert_eq!(test_vm.registers[0], 1000)
     }
 }

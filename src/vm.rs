@@ -1,9 +1,13 @@
 use crate::instruction::Opcode;
 
 pub struct VM {
-    pub registers: [i32; 32],
-    pub pc: usize,
-    pub program: Vec<u8>,
+    /// Array that simulates having hardware registers
+    registers: [i32; 32],
+    /// Program counter that tracks which byte is being executed
+    pc: usize,
+    /// The bytecodes of the program being executed
+    program: Vec<u8>,
+    /// Contains
     remainder: u32,
 }
 
@@ -17,7 +21,7 @@ impl VM {
         };
     }
 
-    // Loops through the instructions as long as instructions can be executed.
+    /// Loops through the instructions as long as instructions can be executed.
     pub fn run(&mut self) {
         let mut done = false;
         while !done {
@@ -25,12 +29,12 @@ impl VM {
         }
     }
 
-    // Executes only one single instruction.
+    /// Executes only one single instruction.
     pub fn run_once(&mut self) {
         self.execute_instruction();
     }
 
-    // Executes single instruction and returns true if no instructions can be executed.
+    /// Executes single instruction and returns true if no instructions can be executed.
     fn execute_instruction(&mut self) -> bool {
         if self.pc >= self.program.len() {
             return true;
@@ -110,14 +114,14 @@ impl VM {
         return opcode;
     }
 
-    // Returns the next 8 bits.
+    /// Returns the next 8 bits.
     fn next_8_bits(&mut self) -> u8 {
         let result = self.program[self.pc];
         self.pc += 1;
         return result;
     }
 
-    // Returns the next 16 bits.
+    /// Returns the next 16 bits.
     fn next_16_bits(&mut self) -> u16 {
         let result = (u16::from(self.program[self.pc]) << 8) | u16::from(self.program[self.pc + 1]);
         self.pc += 2;

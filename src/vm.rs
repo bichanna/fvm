@@ -24,6 +24,18 @@ impl VM {
         };
     }
 
+    pub fn get_program(&mut self) -> &Vec<u8> {
+        &self.program
+    }
+
+    pub fn get_registers(&mut self) -> [i32; 32] {
+        self.registers
+    }
+
+    pub fn add_byte(&mut self, b: u8) {
+        self.program.push(b);
+    }
+
     /// Loops through the instructions as long as instructions can be executed.
     pub fn run(&mut self) {
         let mut done = false;

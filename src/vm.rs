@@ -218,7 +218,7 @@ mod tests {
     #[test]
     fn test_opcode_add() {
         let mut test_vm = VM::new();
-        // Load 500 to register 1, load 500 to register 1, add register 1 and 2, and store the
+        // Load 500 to register 1, load 500 to register 2, add register 1 and 2, and store the
         // result to register 0.
         test_vm.program = vec![0, 1, 1, 244, 0, 2, 1, 244, 1, 1, 2, 0];
         test_vm.run();

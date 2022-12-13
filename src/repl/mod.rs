@@ -51,6 +51,7 @@ impl REPL {
                 ".program" => {
                     println!("{:#?}", self.vm.get_program());
                 }
+                // Lists the registers.
                 ".registers" => {
                     println!("{:#?}", self.vm.get_registers());
                 }
@@ -101,7 +102,7 @@ mod tests {
     #[test]
     fn test_parse_hex() {
         let mut repl = REPL::new();
-        // Load 500 to register 1, load 500 to register 1, add register 1 and 2, and store the
+        // Load 500 to register 1, load 500 to register 2, add register 1 and 2, and store the
         // result to register 0.
         let results = repl.parse_hex("00 01 01 F4 00 02 01 F4 01 01 02 00");
 

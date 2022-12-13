@@ -10,6 +10,9 @@ pub enum Opcode {
     JMP,  // absolute jump
     JMPF, // relative forward jump
     JMPB, // relative backward jump
+    EQ,
+    JEQ,  // jump if equal
+    JNEQ, // jump if not equal
 }
 
 #[derive(Debug, PartialEq)]
@@ -35,6 +38,9 @@ impl From<u8> for Opcode {
             6 => Opcode::JMP,
             7 => Opcode::JMPF,
             8 => Opcode::JMPB,
+            9 => Opcode::EQ,
+            10 => Opcode::JEQ,
+            11 => Opcode::JNEQ,
             _ => Opcode::IGL,
         }
     }

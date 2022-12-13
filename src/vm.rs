@@ -9,6 +9,8 @@ pub struct VM {
     program: Vec<u8>,
     /// Contains
     remainder: u32,
+    /// Contains the result of the last comparison operation
+    equal_flag: bool,
 }
 
 impl VM {
@@ -18,6 +20,7 @@ impl VM {
             pc: 0,
             program: vec![],
             remainder: 0,
+            equal_flag: false,
         };
     }
 
@@ -40,8 +43,8 @@ impl VM {
             return true;
         }
         match self.decode_opcode() {
-            // format: LOAD [number] [1]
-            // Load [number] to register [1]
+            // format: LOAD [0] [number] [number]
+            // Load [number] to register [0]
             Opcode::LOAD => {
                 let register = usize::from(self.next_8_bits());
                 let number = u16::from(self.next_16_bits());
@@ -101,6 +104,38 @@ impl VM {
             Opcode::JMPB => {
                 let value = self.registers[usize::from(self.next_8_bits())];
                 self.pc -= value as usize;
+                false
+            }
+            // format: EQ [0] [1]
+            // Checks if the values of register [0] and register [1] are equal, and stores the
+            // result to `equal_flag`.
+            Opcode::EQ => {
+                let register1 = self.registers[usize::from(self.next_8_bits())];
+                let register2 = self.registers[usize::from(self.next_8_bits())];
+                if register1 == register2 {
+                    self.equal_flag = true;
+                } else {
+                    self.equal_flag = false;
+                }
+                self.next_8_bits();
+                false
+            }
+            // format: JEQ [0]
+            // If `equal_flag` is true, set the counter to the value of register [0].
+            Opcode::JEQ => {
+                let target = self.registers[usize::from(self.next_8_bits())];
+                if self.equal_flag {
+                    self.pc = target as usize;
+                }
+                false
+            }
+            // format: JNEQ [0]
+            // If `equal_flag` is not true, set the counter to the value of register [0].
+            Opcode::JNEQ => {
+                let target = self.registers[usize::from(self.next_8_bits())];
+                if !self.equal_flag {
+                    self.pc = target as usize;
+                }
                 false
             }
             Opcode::IGL => true,
@@ -235,5 +270,29 @@ mod tests {
         test_vm.program = vec![0, 8, 0];
         test_vm.run_once();
         assert_eq!(test_vm.pc, 0);
+    }
+
+    #[test]
+    fn test_opcode_eq() {
+        let mut test_vm = VM::new();
+        test_vm.registers[0] = 10;
+        test_vm.registers[1] = 10;
+        test_vm.program = vec![9, 0, 1, 0, 9, 0, 1, 0];
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, true);
+        test_vm.registers[1] = 20;
+        test_vm.run_once();
+        assert_eq!(test_vm.equal_flag, false);
+    }
+
+    #[test]
+    fn test_opcode_jeq() {
+        let mut test_vm = VM::new();
+        test_vm.equal_flag = true;
+        // Load 7 to register 0, and set the counter the value of the register 0 if `equal_flag` is
+        // true.
+        test_vm.program = vec![0, 0, 0, 7, 10, 0, 0];
+        test_vm.run();
+        assert_eq!(test_vm.pc, 7)
     }
 }

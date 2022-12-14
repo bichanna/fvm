@@ -1,2 +1,2 @@
-# feo-vm
+# FVM
 The Feo VM

@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "feovm"
+name = "fvm"
 version = "0.0.1"

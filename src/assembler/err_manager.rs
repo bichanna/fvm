@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 pub struct ParserError {
     msg: String,
     line: usize,
@@ -9,7 +7,7 @@ pub struct ParserError {
 impl ParserError {
     pub fn new(msg: &str, line: usize, col: usize) -> Self {
         ParserError {
-            msg: String::from_str(msg).unwrap(),
+            msg: String::from(msg),
             line,
             col,
         }

@@ -14,14 +14,14 @@ pub struct VM {
 }
 
 impl VM {
-    pub fn new() -> VM {
-        return VM {
+    pub fn new() -> Self {
+        VM {
             registers: [0; 32],
             pc: 0,
             program: vec![],
             remainder: 0,
             equal_flag: false,
-        };
+        }
     }
 
     pub fn get_program(&mut self) -> &Vec<u8> {

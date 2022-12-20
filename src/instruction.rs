@@ -21,8 +21,8 @@ pub struct Instruction {
 }
 
 impl Instruction {
-    pub fn new(opcode: Opcode) -> Instruction {
-        return Instruction { opcode };
+    pub fn new(opcode: Opcode) -> Self {
+        Instruction { opcode }
     }
 }
 

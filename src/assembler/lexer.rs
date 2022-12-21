@@ -3,10 +3,10 @@ use crate::instruction::Opcode;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
-    Opcode(Opcode),
-    RegisterNum(u8),
-    IntegerOperand(i32),
-    FloatOperand(f64),
+    Opcode((Opcode, usize, usize)),
+    RegisterNum((u8, usize, usize)),
+    IntegerOperand((i32, usize, usize)),
+    FloatOperand((f64, usize, usize)),
 }
 
 pub struct Lexer {
@@ -58,7 +58,8 @@ impl Lexer {
                 }
 
                 let opcode = Self::match_opcode(opcode.as_str());
-                self.tokens.push(Token::Opcode(opcode));
+                self.tokens
+                    .push(Token::Opcode((opcode, self.line, self.col)));
             } else if self.current == '$' {
                 // Register number
                 self.advance();
@@ -73,7 +74,8 @@ impl Lexer {
                         .create_and_add_error("should be u8", self.line, self.col);
                     0
                 });
-                self.tokens.push(Token::RegisterNum(register));
+                self.tokens
+                    .push(Token::RegisterNum((register, self.line, self.col)));
             } else if self.current == '#' {
                 // Integer operand
                 self.advance();
@@ -94,7 +96,8 @@ impl Lexer {
                         .create_and_add_error("should be i32", self.line, self.col);
                     0
                 });
-                self.tokens.push(Token::IntegerOperand(number));
+                self.tokens
+                    .push(Token::IntegerOperand((number, self.line, self.col)));
             } else if self.current == ' ' || self.current == '\n' || self.current == '\t' {
                 // do nothing
             } else {
@@ -135,6 +138,8 @@ impl Lexer {
             if self.current == '\n' {
                 self.line += 1;
                 self.col = 1;
+            } else {
+                self.col += 1;
             }
             self.c += 1;
             self.current = self.source.chars().nth(self.c).unwrap();
@@ -160,16 +165,16 @@ mod tests {
         assert_eq!(
             *lexer.get_tokens(),
             vec![
-                Token::Opcode(Opcode::LOAD),
-                Token::RegisterNum(0),
-                Token::IntegerOperand(500),
-                Token::Opcode(Opcode::LOAD),
-                Token::RegisterNum(1),
-                Token::IntegerOperand(100),
-                Token::Opcode(Opcode::ADD),
-                Token::RegisterNum(0),
-                Token::RegisterNum(1),
-                Token::RegisterNum(2),
+                Token::Opcode((Opcode::LOAD, 1, 5)),
+                Token::RegisterNum((0, 1, 8)),
+                Token::IntegerOperand((500, 1, 13)),
+                Token::Opcode((Opcode::LOAD, 2, 5)),
+                Token::RegisterNum((1, 2, 8)),
+                Token::IntegerOperand((100, 2, 13)),
+                Token::Opcode((Opcode::ADD, 3, 4)),
+                Token::RegisterNum((0, 3, 7)),
+                Token::RegisterNum((1, 3, 10)),
+                Token::RegisterNum((2, 3, 12)),
             ]
         );
     }

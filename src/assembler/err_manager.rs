@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq)]
 pub struct ParserError {
     msg: String,
     line: usize,

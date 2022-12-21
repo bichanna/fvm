@@ -1,18 +1,19 @@
 #[derive(Clone, Debug, PartialEq)]
+#[repr(u8)]
 pub enum Opcode {
-    HLT, // halt
-    IGL, // illegal
-    LOAD,
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    JMP,  // absolute jump
-    JMPF, // relative forward jump
-    JMPB, // relative backward jump
-    EQ,
-    JEQ,  // jump if equal
-    JNEQ, // jump if not equal
+    HLT = 5,   // halt
+    IGL = 255, // illegal
+    LOAD = 0,
+    ADD = 1,
+    SUB = 2,
+    MUL = 3,
+    DIV = 4,
+    JMP = 6,  // absolute jump
+    JMPF = 7, // relative forward jump
+    JMPB = 8, // relative backward jump
+    EQ = 9,
+    JEQ = 10,  // jump if equal
+    JNEQ = 11, // jump if not equal
 }
 
 #[derive(Debug, PartialEq)]

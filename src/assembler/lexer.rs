@@ -1,7 +1,7 @@
 use super::err_manager::ErrorManager;
 use crate::instruction::Opcode;
 
-#[derive(Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Opcode(Opcode),
     RegisterNum(u8),

@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ParserError {
     msg: String,
     line: usize,
@@ -49,7 +49,8 @@ impl ErrorManager {
             self.unfiltered.len()
         } else {
             // TODO: filter unfiltered errors
-            self.unfiltered.len()
+            self.filtered = self.unfiltered.clone();
+            self.filtered.len()
         }
     }
 

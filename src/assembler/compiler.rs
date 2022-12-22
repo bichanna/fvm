@@ -163,7 +163,8 @@ impl Compiler {
         let converted = i as u16;
         let byte1 = converted;
         let byte2 = converted >> 8;
-        [byte1 as u8, byte2 as u8]
+        // little endian rule
+        [byte2 as u8, byte1 as u8]
     }
 
     fn is_end(&self) -> bool {

@@ -184,3 +184,37 @@ impl Compiler {
         }
     }
 }
+
+// Tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compiler() {
+        let tokens = vec![
+            Token::Opcode((Opcode::LOAD, 1, 5)),
+            Token::RegisterNum((0, 1, 8)),
+            Token::IntegerOperand((500, 1, 13)),
+            Token::Opcode((Opcode::LOAD, 2, 5)),
+            Token::RegisterNum((1, 2, 8)),
+            Token::IntegerOperand((100, 2, 13)),
+            Token::Opcode((Opcode::ADD, 3, 4)),
+            Token::RegisterNum((0, 3, 7)),
+            Token::RegisterNum((1, 3, 10)),
+            Token::RegisterNum((2, 3, 12)),
+        ];
+        // Load 500 to register 0, load 100 to register 1, add registers 0 and 1, and stores the
+        // result to register 2.
+        let expected: Vec<u8> = vec![0, 0, 1, 244, 0, 1, 0, 100, 1, 0, 1, 2];
+
+        let err_manager = ErrorManager::new(String::from("<input>"), true);
+        let mut compiler = Compiler::new(tokens, err_manager);
+
+        compiler.compile();
+
+        let compiled = compiler.get_compiled_program();
+
+        assert_eq!(expected, *compiled);
+    }
+}

@@ -13,4 +13,11 @@ impl ParserError {
             col,
         }
     }
+
+    pub fn format(&self, filename: &str) -> String {
+        format!(
+            "{}:{}:{} error: {}",
+            filename, self.col, self.line, self.msg
+        )
+    }
 }

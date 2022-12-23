@@ -21,8 +21,8 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    pub fn get_compiled_program(&self) -> &Vec<u8> {
-        &self.compiled
+    pub fn get_compiled_program(&self) -> Vec<u8> {
+        self.compiled.clone()
     }
 
     /// Compiles the given tokens to binary

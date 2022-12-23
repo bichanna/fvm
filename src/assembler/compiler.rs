@@ -1,22 +1,21 @@
-use super::err_manager::ErrorManager;
+use super::error::ParserError;
 use super::lexer::Token;
 use crate::instruction::Opcode;
-use crate::report_error_with_lines;
 
-pub struct Compiler {
+pub struct Compiler<'a> {
     c: usize,
     current: Token,
-    tokens: Vec<Token>,
-    err_manager: ErrorManager,
+    tokens: &'a Vec<Token>,
     compiled: Vec<u8>,
+    pub errors: Vec<ParserError>,
 }
 
-impl Compiler {
-    pub fn new(tokens: Vec<Token>, err_manager: ErrorManager) -> Self {
+impl<'a> Compiler<'a> {
+    pub fn new<'b>(tokens: &'a Vec<Token>) -> Compiler<'a> {
         Compiler {
             tokens,
-            err_manager,
             c: 0,
+            errors: vec![],
             current: Token::RegisterNum((0, 0, 0)),
             compiled: vec![],
         }
@@ -30,17 +29,14 @@ impl Compiler {
     pub fn compile(&mut self) {
         self.current = self.tokens[self.c].clone();
 
-        while !self.is_end() {
+        while !self.is_end() && !(self.tokens.len() <= self.c + 1) {
             if self.c != 0 {
                 self.advance();
             }
 
             match self.current.clone() {
                 Token::Opcode(opcode) => match opcode.0 {
-                    Opcode::IGL => {
-                        self.err_manager
-                            .create_and_add_error("invalid opcode", opcode.1, opcode.2)
-                    }
+                    Opcode::IGL => self.add_error("expected an opcode", opcode.1, opcode.2),
                     Opcode::HLT => self.compiled.push(opcode.0 as u8),
                     Opcode::LOAD => {
                         self.compiled.push(opcode.0 as u8);
@@ -52,13 +48,13 @@ impl Compiler {
                         match self.current.clone() {
                             Token::RegisterNum(register_num) => register = register_num.0,
                             Token::Opcode(t) => {
-                                report_error_with_lines!(self, t, "expected register number");
+                                self.add_error("expected an register number", t.1, t.2);
                             }
                             Token::IntegerOperand(t) => {
-                                report_error_with_lines!(self, t, "expected register number");
+                                self.add_error("expected an register number", t.1, t.2);
                             }
                             Token::FloatOperand(t) => {
-                                report_error_with_lines!(self, t, "expected register number");
+                                self.add_error("expected an register number", t.1, t.2);
                             }
                         }
                         self.compiled.push(register);
@@ -67,13 +63,13 @@ impl Compiler {
                         match self.current.clone() {
                             Token::IntegerOperand(num) => number = num.0,
                             Token::Opcode(t) => {
-                                report_error_with_lines!(self, t, "expected an operand");
+                                self.add_error("expected an operand", t.1, t.2);
                             }
                             Token::FloatOperand(t) => {
-                                report_error_with_lines!(self, t, "not implemented yet!");
+                                self.add_error("expected an operand", t.1, t.2);
                             }
                             Token::RegisterNum(t) => {
-                                report_error_with_lines!(self, t, "expected an operand");
+                                self.add_error("expected an operand", t.1, t.2);
                             }
                         }
 
@@ -91,13 +87,13 @@ impl Compiler {
                             match self.current.clone() {
                                 Token::RegisterNum(register_num) => register = register_num.0,
                                 Token::Opcode(t) => {
-                                    report_error_with_lines!(self, t, "expected register number");
+                                    self.add_error("expected an register number", t.1, t.2);
                                 }
                                 Token::IntegerOperand(t) => {
-                                    report_error_with_lines!(self, t, "expected register number");
+                                    self.add_error("expected an register number", t.1, t.2);
                                 }
                                 Token::FloatOperand(t) => {
-                                    report_error_with_lines!(self, t, "expected register number");
+                                    self.add_error("expected an register number", t.1, t.2);
                                 }
                             }
                             self.compiled.push(register);
@@ -111,14 +107,13 @@ impl Compiler {
                         self.advance();
                         match self.current.clone() {
                             Token::IntegerOperand(target) => target_pc = target.0 as u8,
-                            Token::Opcode(t) => {
-                                report_error_with_lines!(self, t, "expected an operand");
-                            }
+                            Token::Opcode(t) => self.add_error("expected an operand", t.1, t.2),
                             Token::FloatOperand(t) => {
-                                report_error_with_lines!(self, t, "expected an operand");
+                                self.add_error("expected an operand", t.1, t.2);
                             }
+
                             Token::RegisterNum(t) => {
-                                report_error_with_lines!(self, t, "expected an operand");
+                                self.add_error("expected an operand", t.1, t.2);
                             }
                         }
                         self.compiled.push(target_pc);
@@ -133,13 +128,13 @@ impl Compiler {
                             match self.current.clone() {
                                 Token::RegisterNum(register_num) => register = register_num.0,
                                 Token::Opcode(t) => {
-                                    report_error_with_lines!(self, t, "expected register number");
+                                    self.add_error("expected a register number", t.1, t.2);
                                 }
                                 Token::IntegerOperand(t) => {
-                                    report_error_with_lines!(self, t, "expected register number");
+                                    self.add_error("expected a register number", t.1, t.2);
                                 }
                                 Token::FloatOperand(t) => {
-                                    report_error_with_lines!(self, t, "expected register number");
+                                    self.add_error("expected a register number", t.1, t.2);
                                 }
                             }
                             self.compiled.push(register);
@@ -147,16 +142,20 @@ impl Compiler {
                     }
                 },
                 Token::RegisterNum(t) => {
-                    report_error_with_lines!(self, t, "expected an opcode");
+                    self.add_error("expected an opcode", t.1, t.2);
                 }
                 Token::IntegerOperand(t) => {
-                    report_error_with_lines!(self, t, "expected an opcode");
+                    self.add_error("expected an opcode", t.1, t.2);
                 }
                 Token::FloatOperand(t) => {
-                    report_error_with_lines!(self, t, "expected an opcode")
+                    self.add_error("expected an opcode", t.1, t.2);
                 }
             }
         }
+    }
+
+    fn add_error(&mut self, msg: &str, line: usize, col: usize) {
+        self.errors.push(ParserError::new(msg, line, col));
     }
 
     fn extract_int_operand(i: i32) -> [u8; 2] {
@@ -208,13 +207,13 @@ mod tests {
         // result to register 2.
         let expected: Vec<u8> = vec![0, 0, 1, 244, 0, 1, 0, 100, 1, 0, 1, 2];
 
-        let err_manager = ErrorManager::new(String::from("<input>"), true);
-        let mut compiler = Compiler::new(tokens, err_manager);
+        let mut compiler = Compiler::new(&tokens);
 
         compiler.compile();
 
         let compiled = compiler.get_compiled_program();
 
+        assert_eq!(compiler.errors.len(), 0);
         assert_eq!(expected, *compiled);
     }
 }

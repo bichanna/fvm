@@ -1,4 +1,4 @@
-use super::err_manager::ErrorManager;
+use super::error::ParserError;
 use crate::instruction::Opcode;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -11,7 +11,7 @@ pub enum Token {
 
 pub struct Lexer {
     source: String,
-    err_manager: ErrorManager,
+    pub errors: Vec<ParserError>,
     tokens: Vec<Token>,
     line: usize,
     col: usize,
@@ -20,10 +20,10 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn new(err_manager: ErrorManager, source: &str) -> Self {
+    pub fn new(source: &str) -> Self {
         Lexer {
             source: String::from(source),
-            err_manager,
+            errors: vec![],
             tokens: vec![],
             line: 1,
             col: 1,
@@ -70,8 +70,7 @@ impl Lexer {
                 }
 
                 let register: u8 = register.parse().unwrap_or_else(|_| {
-                    self.err_manager
-                        .create_and_add_error("should be u8", self.line, self.col);
+                    self.add_error("should be u8");
                     0
                 });
                 self.tokens
@@ -92,8 +91,7 @@ impl Lexer {
                 }
 
                 let number: i32 = number.parse().unwrap_or_else(|_| {
-                    self.err_manager
-                        .create_and_add_error("should be i32", self.line, self.col);
+                    self.add_error("should be i32");
                     0
                 });
                 self.tokens
@@ -101,10 +99,13 @@ impl Lexer {
             } else if self.current == ' ' || self.current == '\n' || self.current == '\t' {
                 // do nothing
             } else {
-                self.err_manager
-                    .create_and_add_error("invalid character", self.line, self.col);
+                self.add_error("invalid character");
             }
         }
+    }
+
+    fn add_error(&mut self, msg: &str) {
+        self.errors.push(ParserError::new(msg, self.line, self.col));
     }
 
     fn match_opcode(op: &str) -> Opcode {
@@ -158,9 +159,10 @@ mod tests {
     #[test]
     fn test_lexer() {
         let source = "LOAD $0 #500\nLOAD $1 #100\nADD $0 $1 $2";
-        let err_manager = ErrorManager::new(String::from("<input>"), true);
-        let mut lexer = Lexer::new(err_manager, source);
+        let mut lexer = Lexer::new(source);
         lexer.tokenize();
+
+        assert_eq!(lexer.errors.len(), 0);
 
         assert_eq!(
             *lexer.get_tokens(),

@@ -5,5 +5,5 @@ pub mod vm;
 
 fn main() {
     let mut repl = repl::REPL::new();
-    repl.run();
+    repl.run(false);
 }

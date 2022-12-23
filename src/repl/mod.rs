@@ -1,3 +1,4 @@
+use crate::assembler::Assembler;
 use crate::vm::VM;
 use std::io;
 use std::io::Write;
@@ -17,7 +18,7 @@ impl REPL {
     }
 
     /// Runs a REPL.
-    pub fn run(&mut self) {
+    pub fn run(&mut self, hex: bool) {
         println!("Welcome to Feo!");
         loop {
             let mut buffer = String::new();
@@ -56,15 +57,22 @@ impl REPL {
                     println!("{:#?}", self.vm.get_registers());
                 }
                 _ => {
-                    let results = self.parse_hex(buffer);
-                    match results {
-                        Ok(bytes) => {
-                            for byte in bytes {
-                                self.vm.add_byte(byte)
+                    if hex {
+                        let results = self.parse_hex(buffer);
+                        match results {
+                            Ok(bytes) => {
+                                for byte in bytes {
+                                    self.vm.add_byte(byte)
+                                }
+                            }
+                            _ => {
+                                println!("Unable to decode hex string. Please enter 4 groups of 2 hex characters");
                             }
                         }
-                        _ => {
-                            println!("Unable to decode hex string. Please enter 4 groups of 2 hex characters");
+                    } else {
+                        let assembler = Assembler::new("<input>", buffer.to_string(), true);
+                        for byte in assembler.compile() {
+                            self.vm.add_byte(byte);
                         }
                     }
                     // Run the instruction.

@@ -3,6 +3,8 @@ use crate::instruction::Opcode;
 pub struct VM {
     /// Array that simulates having hardware registers
     registers: [i32; 32],
+    /// Heap for the VM
+    heap: Vec<u8>,
     /// Program counter that tracks which byte is being executed
     pc: usize,
     /// The bytecodes of the program being executed
@@ -17,6 +19,7 @@ impl VM {
     pub fn new() -> Self {
         VM {
             registers: [0; 32],
+            heap: vec![],
             pc: 0,
             program: vec![],
             remainder: 0,
@@ -148,6 +151,15 @@ impl VM {
                 if !self.equal_flag {
                     self.pc = target as usize;
                 }
+                false
+            }
+            // format: ALOC [0]
+            // Extends the size of the heap vector by the amount in the register [0].
+            Opcode::ALOC => {
+                let register = usize::from(self.next_8_bits());
+                let bytes = self.registers[register];
+                let new_end = self.heap.len() as i32 + bytes;
+                self.heap.resize(new_end as usize, 0);
                 false
             }
             Opcode::IGL => true,
@@ -306,5 +318,14 @@ mod tests {
         test_vm.program = vec![0, 0, 0, 7, 10, 0, 0];
         test_vm.run();
         assert_eq!(test_vm.pc, 7)
+    }
+
+    #[test]
+    fn test_opcode_aloc() {
+        let mut test_vm = VM::new();
+        // Load 5 to register 0, and allocate the value stored in register 5 to the heap.
+        test_vm.program = vec![0, 0, 0, 5, 12, 0];
+        test_vm.run();
+        assert_eq!(test_vm.heap.len(), 5);
     }
 }

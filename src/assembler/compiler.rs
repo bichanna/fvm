@@ -99,7 +99,12 @@ impl<'a> Compiler<'a> {
                             self.compiled.push(register);
                         }
                     }
-                    Opcode::JMP | Opcode::JMPF | Opcode::JMPB | Opcode::JEQ | Opcode::JNEQ => {
+                    Opcode::JMP
+                    | Opcode::JMPF
+                    | Opcode::JMPB
+                    | Opcode::JEQ
+                    | Opcode::JNEQ
+                    | Opcode::ALOC => {
                         self.compiled.push(opcode.0 as u8);
 
                         let mut target_pc: u8 = 0;

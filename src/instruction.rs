@@ -15,6 +15,8 @@ pub enum Opcode {
     JEQ = 10,  // jump if equal
     JNEQ = 11, // jump if not equal
     ALOC = 12,
+    INC = 13,
+    DEC = 14,
 }
 
 #[derive(Debug, PartialEq)]
@@ -44,6 +46,8 @@ impl From<u8> for Opcode {
             10 => Opcode::JEQ,
             11 => Opcode::JNEQ,
             12 => Opcode::ALOC,
+            13 => Opcode::INC,
+            14 => Opcode::DEC,
             _ => Opcode::IGL,
         }
     }

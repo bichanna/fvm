@@ -1,8 +1,10 @@
 use crate::assembler::Assembler;
 use crate::vm::VM;
-use std::io;
+use std::fs::File;
 use std::io::Write;
+use std::io::{self, Read};
 use std::num::ParseIntError;
+use std::path::Path;
 
 pub struct REPL {
     command_buffer: Vec<String>,
@@ -55,6 +57,25 @@ impl REPL {
                 // Lists the registers.
                 ".registers" => {
                     println!("{:#?}", self.vm.get_registers());
+                }
+                // Loads file.
+                ".load_file" => {
+                    print!("Enter the path of the file you wish to load: ");
+                    io::stdout().flush().expect("Unable to stdout");
+                    let mut tmp = String::new();
+                    stdin
+                        .read_line(&mut tmp)
+                        .expect("Unable to read input line.");
+                    let tmp = tmp.trim();
+                    let filename = Path::new(&tmp);
+                    let mut f = File::open(Path::new(&filename)).expect("File not found");
+                    let mut contents = String::new();
+                    f.read_to_string(&mut contents)
+                        .expect("Error reading from the file");
+                    let assembler = Assembler::new("<input>", buffer.to_string(), true);
+                    for byte in assembler.compile() {
+                        self.vm.add_byte(byte);
+                    }
                 }
                 _ => {
                     if hex {

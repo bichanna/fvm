@@ -7,6 +7,9 @@ pub enum Token {
     RegisterNum((u8, usize, usize)),
     IntegerOperand((i32, usize, usize)),
     FloatOperand((f64, usize, usize)),
+    LabelDeclaration((String, usize, usize)),
+    LabelUsage((String, usize, usize)),
+    Directive((String, usize, usize)),
 }
 
 pub struct Lexer {
@@ -45,21 +48,28 @@ impl Lexer {
                 self.advance();
             }
             if self.current.is_alphabetic() {
-                // Opcode
+                // Opcode or label declaration
                 let mut opcode = String::new();
                 while self.current != ' '
                     && self.current != '\t'
                     && self.current != '\n'
-                    && self.current.is_alphabetic()
+                    && (self.current == '_' || self.current.is_alphabetic())
                     && !self.is_end()
                 {
                     opcode.push(self.current);
                     self.advance();
                 }
 
-                let opcode = Self::match_opcode(opcode.as_str());
-                self.tokens
-                    .push(Token::Opcode((opcode, self.line, self.col)));
+                // Check if it's a label or not
+                if self.current == ':' {
+                    let label = Token::LabelDeclaration((opcode, self.line, self.col));
+                    self.tokens.push(label);
+                    self.advance();
+                } else {
+                    let opcode = Self::match_opcode(opcode.as_str());
+                    self.tokens
+                        .push(Token::Opcode((opcode, self.line, self.col)));
+                }
             } else if self.current == '$' {
                 // Register number
                 self.advance();
@@ -96,6 +106,36 @@ impl Lexer {
                 });
                 self.tokens
                     .push(Token::IntegerOperand((number, self.line, self.col)));
+            } else if self.current == '@' {
+                // Label usage
+                self.advance();
+                let mut label = String::new();
+                while self.current != ' '
+                    && self.current != '\t'
+                    && self.current != '\n'
+                    && (self.current == '_' || self.current.is_alphabetic())
+                    && !self.is_end()
+                {
+                    label.push(self.current);
+                    self.advance();
+                }
+                let label = Token::LabelUsage((label, self.line, self.col));
+                self.tokens.push(label);
+            } else if self.current == '.' {
+                // Directive
+                self.advance();
+                let mut directive = String::new();
+                while self.current != ' '
+                    && self.current != '\t'
+                    && self.current != '\n'
+                    && (self.current == '_' || self.current.is_alphabetic())
+                    && !self.is_end()
+                {
+                    directive.push(self.current);
+                    self.advance();
+                }
+                let directive = Token::Directive((directive, self.line, self.col));
+                self.tokens.push(directive);
             } else if self.current == ' ' || self.current == '\n' || self.current == '\t' {
                 // do nothing
             } else {
@@ -157,7 +197,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_lexer() {
+    fn test_opcodes() {
         let source = "LOAD $0 #500\nLOAD $1 #100\nADD $0 $1 $2";
         let mut lexer = Lexer::new(source);
         lexer.tokenize();
@@ -178,6 +218,48 @@ mod tests {
                 Token::RegisterNum((1, 3, 10)),
                 Token::RegisterNum((2, 3, 12)),
             ]
+        );
+    }
+
+    #[test]
+    fn test_label_declaration() {
+        let source = "test_label:";
+        let mut lexer = Lexer::new(source);
+        lexer.tokenize();
+
+        assert_eq!(lexer.errors.len(), 0);
+
+        assert_eq!(
+            *lexer.get_tokens(),
+            vec![Token::LabelDeclaration((String::from("test_label"), 1, 11))]
+        );
+    }
+
+    #[test]
+    fn test_label_usage() {
+        let source = "@test_label";
+        let mut lexer = Lexer::new(source);
+        lexer.tokenize();
+
+        assert_eq!(lexer.errors.len(), 0);
+
+        assert_eq!(
+            *lexer.get_tokens(),
+            vec![Token::LabelUsage((String::from("test_label"), 1, 11))]
+        );
+    }
+
+    #[test]
+    fn test_directive() {
+        let source = ".some_directive";
+        let mut lexer = Lexer::new(source);
+        lexer.tokenize();
+
+        assert_eq!(lexer.errors.len(), 0);
+
+        assert_eq!(
+            *lexer.get_tokens(),
+            vec![Token::Directive((String::from("some_directive"), 1, 15))]
         );
     }
 }

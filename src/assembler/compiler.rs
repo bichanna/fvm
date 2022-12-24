@@ -48,13 +48,22 @@ impl<'a> Compiler<'a> {
                         match self.current.clone() {
                             Token::RegisterNum(register_num) => register = register_num.0,
                             Token::Opcode(t) => {
-                                self.add_error("expected an register number", t.1, t.2);
+                                self.add_error("expected a register number", t.1, t.2);
                             }
                             Token::IntegerOperand(t) => {
-                                self.add_error("expected an register number", t.1, t.2);
+                                self.add_error("expected a register number", t.1, t.2);
                             }
                             Token::FloatOperand(t) => {
-                                self.add_error("expected an register number", t.1, t.2);
+                                self.add_error("expected a register number", t.1, t.2);
+                            }
+                            Token::LabelDeclaration(t) => {
+                                self.add_error("expected a register number", t.1, t.2);
+                            }
+                            Token::LabelUsage(t) => {
+                                self.add_error("expected a register number", t.1, t.2);
+                            }
+                            Token::Directive(t) => {
+                                self.add_error("expected a register number", t.1, t.2);
                             }
                         }
                         self.compiled.push(register);
@@ -69,6 +78,16 @@ impl<'a> Compiler<'a> {
                                 self.add_error("expected an operand", t.1, t.2);
                             }
                             Token::RegisterNum(t) => {
+                                self.add_error("expected an operand", t.1, t.2);
+                            }
+
+                            Token::LabelDeclaration(t) => {
+                                self.add_error("expected an operand", t.1, t.2);
+                            }
+                            Token::LabelUsage(t) => {
+                                self.add_error("expected an operand", t.1, t.2);
+                            }
+                            Token::Directive(t) => {
                                 self.add_error("expected an operand", t.1, t.2);
                             }
                         }
@@ -87,13 +106,22 @@ impl<'a> Compiler<'a> {
                             match self.current.clone() {
                                 Token::RegisterNum(register_num) => register = register_num.0,
                                 Token::Opcode(t) => {
-                                    self.add_error("expected an register number", t.1, t.2);
+                                    self.add_error("expected a register number", t.1, t.2);
                                 }
                                 Token::IntegerOperand(t) => {
-                                    self.add_error("expected an register number", t.1, t.2);
+                                    self.add_error("expected a register number", t.1, t.2);
                                 }
                                 Token::FloatOperand(t) => {
-                                    self.add_error("expected an register number", t.1, t.2);
+                                    self.add_error("expected a register number", t.1, t.2);
+                                }
+                                Token::LabelDeclaration(t) => {
+                                    self.add_error("expected a register number", t.1, t.2);
+                                }
+                                Token::LabelUsage(t) => {
+                                    self.add_error("expected a register number", t.1, t.2);
+                                }
+                                Token::Directive(t) => {
+                                    self.add_error("expected a register number", t.1, t.2);
                                 }
                             }
                             self.compiled.push(register);
@@ -104,7 +132,9 @@ impl<'a> Compiler<'a> {
                     | Opcode::JMPB
                     | Opcode::JEQ
                     | Opcode::JNEQ
-                    | Opcode::ALOC => {
+                    | Opcode::ALOC
+                    | Opcode::INC
+                    | Opcode::DEC => {
                         self.compiled.push(opcode.0 as u8);
 
                         let mut target_pc: u8 = 0;
@@ -118,6 +148,15 @@ impl<'a> Compiler<'a> {
                             }
 
                             Token::RegisterNum(t) => {
+                                self.add_error("expected an operand", t.1, t.2);
+                            }
+                            Token::LabelDeclaration(t) => {
+                                self.add_error("expected an operand", t.1, t.2);
+                            }
+                            Token::LabelUsage(t) => {
+                                self.add_error("expected an operand", t.1, t.2);
+                            }
+                            Token::Directive(t) => {
                                 self.add_error("expected an operand", t.1, t.2);
                             }
                         }
@@ -141,6 +180,15 @@ impl<'a> Compiler<'a> {
                                 Token::FloatOperand(t) => {
                                     self.add_error("expected a register number", t.1, t.2);
                                 }
+                                Token::LabelDeclaration(t) => {
+                                    self.add_error("expected a register number", t.1, t.2);
+                                }
+                                Token::LabelUsage(t) => {
+                                    self.add_error("expected a register number", t.1, t.2);
+                                }
+                                Token::Directive(t) => {
+                                    self.add_error("expected a register number", t.1, t.2);
+                                }
                             }
                             self.compiled.push(register);
                         }
@@ -155,6 +203,7 @@ impl<'a> Compiler<'a> {
                 Token::FloatOperand(t) => {
                     self.add_error("expected an opcode", t.1, t.2);
                 }
+                Token::LabelDeclaration(t) | Token::LabelUsage(_) | Token::Directive(_) => todo!(),
             }
         }
     }

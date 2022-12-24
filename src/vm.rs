@@ -162,6 +162,20 @@ impl VM {
                 self.heap.resize(new_end as usize, 0);
                 false
             }
+            // format: INC [0]
+            // Increments the value stored in register [0] by 1.
+            Opcode::INC => {
+                let register = usize::from(self.next_8_bits());
+                self.registers[register] += 1;
+                false
+            }
+            // format: DEC [0]
+            // Decrements the value stored in register [0] by 1.
+            Opcode::DEC => {
+                let register = usize::from(self.next_8_bits());
+                self.registers[register] -= 1;
+                false
+            }
             Opcode::IGL => true,
             Opcode::HLT => true,
         }
@@ -327,5 +341,23 @@ mod tests {
         test_vm.program = vec![0, 0, 0, 5, 12, 0];
         test_vm.run();
         assert_eq!(test_vm.heap.len(), 5);
+    }
+
+    #[test]
+    fn test_opcode_inc() {
+        let mut test_vm = VM::new();
+        // Load 5 to register 0, and increments the value stored in register 0 by 1.
+        test_vm.program = vec![0, 0, 0, 5, 13, 0];
+        test_vm.run();
+        assert_eq!(test_vm.registers[0], 6);
+    }
+
+    #[test]
+    fn test_opcode_dec() {
+        let mut test_vm = VM::new();
+        // Load 5 to register 0, and decrements the value stored in register 0 by 1.
+        test_vm.program = vec![0, 0, 0, 5, 14, 0];
+        test_vm.run();
+        assert_eq!(test_vm.registers[0], 4);
     }
 }

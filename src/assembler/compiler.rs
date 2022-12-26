@@ -1,19 +1,22 @@
 use super::error::ParserError;
 use super::lexer::Token;
+use super::symbol_table::SymbolTable;
 use crate::instruction::Opcode;
 
 pub struct Compiler<'a> {
     c: usize,
     current: Token,
     tokens: &'a Vec<Token>,
+    symbol_table: &'a SymbolTable,
     compiled: Vec<u8>,
     pub errors: Vec<ParserError>,
 }
 
 impl<'a> Compiler<'a> {
-    pub fn new<'b>(tokens: &'a Vec<Token>) -> Compiler<'a> {
+    pub fn new<'b>(tokens: &'a Vec<Token>, symbol_table: &'a SymbolTable) -> Compiler<'a> {
         Compiler {
             tokens,
+            symbol_table,
             c: 0,
             errors: vec![],
             current: Token::RegisterNum((0, 0, 0)),
@@ -25,25 +28,89 @@ impl<'a> Compiler<'a> {
         self.compiled.clone()
     }
 
-    /// Compiles the given tokens to binary
+    /// Compiles all tokens.
+    pub fn compile_all(&mut self) {
+        while !self.is_end() && !(self.tokens.len() <= self.c + 1) {
+            self.compile();
+        }
+    }
+
+    /// Compiles one token.
     pub fn compile(&mut self) {
         self.current = self.tokens[self.c].clone();
 
-        while !self.is_end() && !(self.tokens.len() <= self.c + 1) {
-            if self.c != 0 {
-                self.advance();
-            }
+        if self.c != 0 {
+            self.advance();
+        }
 
-            match self.current.clone() {
-                Token::Opcode(opcode) => match opcode.0 {
-                    Opcode::IGL => self.add_error("expected an opcode", opcode.1, opcode.2),
-                    Opcode::HLT => self.compiled.push(opcode.0 as u8),
-                    Opcode::LOAD => {
-                        self.compiled.push(opcode.0 as u8);
+        match self.current.clone() {
+            Token::Opcode(opcode) => match opcode.0 {
+                Opcode::IGL => self.add_error("expected an opcode", opcode.1, opcode.2),
+                Opcode::HLT => self.compiled.push(opcode.0 as u8),
+                Opcode::LOAD => {
+                    self.compiled.push(opcode.0 as u8);
 
-                        let mut register: u8 = 0;
-                        let mut number: i32 = 0;
+                    let mut register: u8 = 0;
+                    let mut number: i32 = 0;
 
+                    self.advance();
+                    match self.current.clone() {
+                        Token::RegisterNum(register_num) => register = register_num.0,
+                        Token::Opcode(t) => {
+                            self.add_error("expected a register number", t.1, t.2);
+                        }
+                        Token::IntegerOperand(t) => {
+                            self.add_error("expected a register number", t.1, t.2);
+                        }
+                        Token::FloatOperand(t) => {
+                            self.add_error("expected a register number", t.1, t.2);
+                        }
+                        Token::LabelDeclaration(t) => {
+                            self.add_error("expected a register number", t.1, t.2);
+                        }
+                        Token::LabelUsage(t) => {
+                            self.add_error("expected a register number", t.1, t.2);
+                        }
+                        Token::Directive(t) => {
+                            self.add_error("expected a register number", t.1, t.2);
+                        }
+                    }
+                    self.compiled.push(register);
+
+                    self.advance();
+                    match self.current.clone() {
+                        Token::IntegerOperand(num) => number = num.0,
+                        Token::Opcode(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+                        Token::FloatOperand(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+                        Token::RegisterNum(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+
+                        Token::LabelDeclaration(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+                        Token::LabelUsage(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+                        Token::Directive(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+                    }
+
+                    for b in Compiler::extract_int_operand(number) {
+                        self.compiled.push(b);
+                    }
+                }
+                Opcode::ADD | Opcode::SUB | Opcode::MUL | Opcode::DIV => {
+                    self.compiled.push(opcode.0 as u8);
+
+                    let mut register: u8 = 0;
+
+                    for _ in 0..3 {
                         self.advance();
                         match self.current.clone() {
                             Token::RegisterNum(register_num) => register = register_num.0,
@@ -67,144 +134,85 @@ impl<'a> Compiler<'a> {
                             }
                         }
                         self.compiled.push(register);
+                    }
+                }
+                Opcode::JMP
+                | Opcode::JMPF
+                | Opcode::JMPB
+                | Opcode::JEQ
+                | Opcode::JNEQ
+                | Opcode::ALOC
+                | Opcode::INC
+                | Opcode::DEC => {
+                    self.compiled.push(opcode.0 as u8);
 
+                    let mut target_pc: u8 = 0;
+
+                    self.advance();
+                    match self.current.clone() {
+                        Token::IntegerOperand(target) => target_pc = target.0 as u8,
+                        Token::Opcode(t) => self.add_error("expected an operand", t.1, t.2),
+                        Token::FloatOperand(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+
+                        Token::RegisterNum(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+                        Token::LabelDeclaration(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+                        Token::LabelUsage(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+                        Token::Directive(t) => {
+                            self.add_error("expected an operand", t.1, t.2);
+                        }
+                    }
+                    self.compiled.push(target_pc);
+                }
+                Opcode::EQ => {
+                    self.compiled.push(opcode.0 as u8);
+
+                    let mut register: u8 = 0;
+
+                    for _ in 0..2 {
                         self.advance();
                         match self.current.clone() {
-                            Token::IntegerOperand(num) => number = num.0,
+                            Token::RegisterNum(register_num) => register = register_num.0,
                             Token::Opcode(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
+                                self.add_error("expected a register number", t.1, t.2);
+                            }
+                            Token::IntegerOperand(t) => {
+                                self.add_error("expected a register number", t.1, t.2);
                             }
                             Token::FloatOperand(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
-                            }
-                            Token::RegisterNum(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
-                            }
-
-                            Token::LabelDeclaration(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
-                            }
-                            Token::LabelUsage(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
-                            }
-                            Token::Directive(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
-                            }
-                        }
-
-                        for b in Compiler::extract_int_operand(number) {
-                            self.compiled.push(b);
-                        }
-                    }
-                    Opcode::ADD | Opcode::SUB | Opcode::MUL | Opcode::DIV => {
-                        self.compiled.push(opcode.0 as u8);
-
-                        let mut register: u8 = 0;
-
-                        for _ in 0..3 {
-                            self.advance();
-                            match self.current.clone() {
-                                Token::RegisterNum(register_num) => register = register_num.0,
-                                Token::Opcode(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                                Token::IntegerOperand(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                                Token::FloatOperand(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                                Token::LabelDeclaration(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                                Token::LabelUsage(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                                Token::Directive(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                            }
-                            self.compiled.push(register);
-                        }
-                    }
-                    Opcode::JMP
-                    | Opcode::JMPF
-                    | Opcode::JMPB
-                    | Opcode::JEQ
-                    | Opcode::JNEQ
-                    | Opcode::ALOC
-                    | Opcode::INC
-                    | Opcode::DEC => {
-                        self.compiled.push(opcode.0 as u8);
-
-                        let mut target_pc: u8 = 0;
-
-                        self.advance();
-                        match self.current.clone() {
-                            Token::IntegerOperand(target) => target_pc = target.0 as u8,
-                            Token::Opcode(t) => self.add_error("expected an operand", t.1, t.2),
-                            Token::FloatOperand(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
-                            }
-
-                            Token::RegisterNum(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
+                                self.add_error("expected a register number", t.1, t.2);
                             }
                             Token::LabelDeclaration(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
+                                self.add_error("expected a register number", t.1, t.2);
                             }
                             Token::LabelUsage(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
+                                self.add_error("expected a register number", t.1, t.2);
                             }
                             Token::Directive(t) => {
-                                self.add_error("expected an operand", t.1, t.2);
+                                self.add_error("expected a register number", t.1, t.2);
                             }
                         }
-                        self.compiled.push(target_pc);
+                        self.compiled.push(register);
                     }
-                    Opcode::EQ => {
-                        self.compiled.push(opcode.0 as u8);
-
-                        let mut register: u8 = 0;
-
-                        for _ in 0..2 {
-                            self.advance();
-                            match self.current.clone() {
-                                Token::RegisterNum(register_num) => register = register_num.0,
-                                Token::Opcode(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                                Token::IntegerOperand(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                                Token::FloatOperand(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                                Token::LabelDeclaration(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                                Token::LabelUsage(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                                Token::Directive(t) => {
-                                    self.add_error("expected a register number", t.1, t.2);
-                                }
-                            }
-                            self.compiled.push(register);
-                        }
-                    }
-                },
-                Token::RegisterNum(t) => {
-                    self.add_error("expected an opcode", t.1, t.2);
                 }
-                Token::IntegerOperand(t) => {
-                    self.add_error("expected an opcode", t.1, t.2);
-                }
-                Token::FloatOperand(t) => {
-                    self.add_error("expected an opcode", t.1, t.2);
-                }
-                Token::LabelDeclaration(t) | Token::LabelUsage(_) | Token::Directive(_) => todo!(),
+            },
+            Token::RegisterNum(t) => {
+                self.add_error("expected an opcode", t.1, t.2);
             }
+            Token::IntegerOperand(t) => {
+                self.add_error("expected an opcode", t.1, t.2);
+            }
+            Token::FloatOperand(t) => {
+                self.add_error("expected an opcode", t.1, t.2);
+            }
+            Token::LabelDeclaration(_) | Token::LabelUsage(_) | Token::Directive(_) => todo!(),
         }
     }
 

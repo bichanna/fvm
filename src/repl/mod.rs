@@ -72,7 +72,7 @@ impl REPL {
                     let mut contents = String::new();
                     f.read_to_string(&mut contents)
                         .expect("Error reading from the file");
-                    let assembler = Assembler::new("<input>", buffer.to_string(), true);
+                    let mut assembler = Assembler::new("<input>", buffer.to_string(), true);
                     for byte in assembler.compile() {
                         self.vm.add_byte(byte);
                     }
@@ -91,7 +91,7 @@ impl REPL {
                             }
                         }
                     } else {
-                        let assembler = Assembler::new("<input>", buffer.to_string(), true);
+                        let mut assembler = Assembler::new("<input>", buffer.to_string(), true);
                         for byte in assembler.compile() {
                             self.vm.add_byte(byte);
                         }

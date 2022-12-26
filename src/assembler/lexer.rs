@@ -12,6 +12,22 @@ pub enum Token {
     Directive((String, usize, usize)),
 }
 
+impl Token {
+    pub fn is_label(&self) -> bool {
+        match self {
+            Token::LabelDeclaration(_) | Token::LabelUsage(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn get_label_name(&self) -> Option<String> {
+        match self {
+            Token::LabelDeclaration(t) => Some(t.0.clone()),
+            _ => None,
+        }
+    }
+}
+
 pub struct Lexer {
     source: String,
     pub errors: Vec<ParserError>,
@@ -162,6 +178,9 @@ impl Lexer {
             "EQ" => Opcode::EQ,
             "JEQ" => Opcode::JEQ,
             "JNEQ" => Opcode::JNEQ,
+            "ALOC" => Opcode::ALOC,
+            "INC" => Opcode::INC,
+            "DEC" => Opcode::DEC,
             _ => Opcode::IGL,
         }
     }

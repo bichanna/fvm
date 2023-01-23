@@ -269,9 +269,11 @@ mod tests {
         // result to register 2.
         let expected: Vec<u8> = vec![0, 0, 1, 244, 0, 1, 0, 100, 1, 0, 1, 2];
 
-        let mut compiler = Compiler::new(&tokens);
+        let symbol_table = SymbolTable::new();
 
-        compiler.compile();
+        let mut compiler = Compiler::new(&tokens, &symbol_table);
+
+        compiler.compile_all();
 
         let compiled = compiler.get_compiled_program();
 

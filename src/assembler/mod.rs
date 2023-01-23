@@ -13,20 +13,20 @@ pub enum AssemblerPhase {
     Second,
 }
 
-pub struct Assembler {
+pub struct Assembler<'a> {
     pub phase: AssemblerPhase,
     pub symbols: SymbolTable,
-    filename: String,
-    source: String,
+    filename: &'a str,
+    source: &'a String,
     repl: bool,
 }
 
-impl Assembler {
-    pub fn new(filename: &str, source: String, repl: bool) -> Self {
+impl<'a> Assembler<'a> {
+    pub fn new<'b>(filename: &'a str, source: &'a String, repl: bool) -> Self {
         Assembler {
             phase: AssemblerPhase::First,
             symbols: SymbolTable::new(),
-            filename: String::from(filename),
+            filename,
             source,
             repl,
         }
@@ -38,7 +38,7 @@ impl Assembler {
         lexer.tokenize();
         if lexer.errors.len() > 0 {
             for err in &lexer.errors {
-                println!("{}", err.format(self.filename.as_str()));
+                println!("{}", err.format(self.filename));
             }
             if !self.repl {
                 process::exit(1);
@@ -63,7 +63,7 @@ impl Assembler {
         compiler.compile_all();
         if compiler.errors.len() > 0 {
             for err in &compiler.errors {
-                println!("{}", err.format(self.filename.as_str()));
+                println!("{}", err.format(self.filename));
             }
             if !self.repl {
                 process::exit(1);

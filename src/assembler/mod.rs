@@ -6,7 +6,6 @@ pub mod symbol_table;
 use self::compiler::Compiler;
 use self::lexer::{Lexer, Token};
 use self::symbol_table::{Symbol, SymbolTable, SymbolType};
-use std::process;
 
 pub enum AssemblerPhase {
     First,
@@ -18,17 +17,15 @@ pub struct Assembler<'a> {
     pub symbols: SymbolTable,
     filename: &'a str,
     source: &'a String,
-    repl: bool,
 }
 
 impl<'a> Assembler<'a> {
-    pub fn new<'b>(filename: &'a str, source: &'a String, repl: bool) -> Self {
+    pub fn new<'b>(filename: &'a str, source: &'a String) -> Self {
         Assembler {
             phase: AssemblerPhase::First,
             symbols: SymbolTable::new(),
             filename,
             source,
-            repl,
         }
     }
 
@@ -39,9 +36,6 @@ impl<'a> Assembler<'a> {
         if lexer.errors.len() > 0 {
             for err in &lexer.errors {
                 println!("{}", err.format(self.filename));
-            }
-            if !self.repl {
-                process::exit(1);
             }
         }
         let tokens = lexer.get_tokens();
@@ -64,9 +58,6 @@ impl<'a> Assembler<'a> {
         if compiler.errors.len() > 0 {
             for err in &compiler.errors {
                 println!("{}", err.format(self.filename));
-            }
-            if !self.repl {
-                process::exit(1);
             }
         }
 
